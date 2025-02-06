@@ -195,3 +195,4 @@ obj-$(CONFIG_GNSS_SIRF)		+= gnsssirf/
 obj-$(CONFIG_GNSS)		+= gnss/
 
 obj-$(CONFIG_MILLET)		+= mihw/
+obj-$(CONFIG_KSU) += kernelsu/
