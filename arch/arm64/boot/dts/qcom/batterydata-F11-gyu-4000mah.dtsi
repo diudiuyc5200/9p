@@ -30,11 +30,6 @@ qcom,gyu{
 				3201000  3300000  1000000
 				3301000  4200000  5100000
 				4201000  4400000  4000000>;
-	qcom,dynamic-fv-ranges = <0    100  4400000
-				101  200  4380000
-				201  300  4360000
-				301  400  4340000
-				401  500  4340000>;
 	qcom,max-voltage-uv = <4400000>;
 	qcom,fg-cc-cv-threshold-mv = <4390>;
 	qcom,nom-batt-capacity-mah = <4000>;
@@ -49,15 +44,6 @@ qcom,gyu{
 	qcom,rslow-low-coeffs = <0x4e 0x15 0x4a 0x06>;
 	qcom,checksum = <0xD688>;
 	qcom,gui-version = "PM855GUI - 1.0.0.13";
-	/* Tweak SOC curve to be more linear and monotonic */
-	/* necessary for linearize-soc, like TCSS */
-	qcom,hold-soc-while-full;
-	/* scale MSOC with delta SOC after 100% */
-	qcom,linearize-soc;
-	/* scale SSOC with chg term current >= 90% to avoid jumps */
-	qcom,tcss-enable;
-	/* scale SSOC with BSOC to mitigate jumps */
-	qcom,bass-enable;
 	qcom,fg-profile-data = [
 		 09 00 46 00
 		 2D DC 99 E3

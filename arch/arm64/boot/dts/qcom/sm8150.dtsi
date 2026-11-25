@@ -542,7 +542,7 @@
 	};
 
 	chosen {
-		bootargs = "rcupdate.rcu_expedited=1 rcu_nocbs=0-3 cgroup.memory=nokmem,nosocket nosoftlockup mce=ignore_ce";
+		bootargs = "rcupdate.rcu_expedited=1 rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket nosoftlockup mce=ignore_ce";
 	};
 
 	soc: soc { };
@@ -682,11 +682,20 @@
 			label = "cont_splash_region";
 		};
 
+		ramoops: ramoops@a1600000 {
+			compatible = "ramoops";
+			reg = <0x0 0xa1600000 0x0 0x800000>;
+			record-size = <0x200000>;
+			pmsg-size = <0x200000>;
+		    ecc-size = <16>;
+		    max-reason = <4>;
+		};
+
 		adsp_mem: adsp_region {
 			compatible = "shared-dma-pool";
 			alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
 			reusable;
-			alignment = <0x0 0x400000>;
+			alignment = <0x0 0x2000000>;
 			size = <0x0 0x1000000>;
 		};
 
@@ -736,7 +745,7 @@
 			alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
 			reusable;
 			alignment = <0x0 0x400000>;
-			size = <0x0 0x8000000>;
+			size = <0x0 0x2800000>;
 			linux,cma-default;
 		};
 	};
@@ -2452,7 +2461,6 @@
 		compatible = "qcom,msm-fastrpc-compute";
 		qcom,fastrpc-adsp-audio-pdr;
 		qcom,rpc-latency-us = <235>;
-                qcom,qos-cores = <0 1 2 3>;
 
 		qcom,msm_fastrpc_compute_cb1 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
