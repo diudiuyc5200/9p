@@ -983,8 +983,8 @@ int get_anon_bdev(dev_t *p)
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	if (static_branch_unlikely(&susfs_is_sdcard_android_data_not_decrypted)) {
 		if (susfs_is_current_ksu_domain()) {
-			dev = ida_simple_get(&unnamed_dev_ida, DEFAULT_KSU_MNT_MINOR_DEV,
-					     (1 << MINORBITS), GFP_ATOMIC);
+			dev = ida_alloc_range(&unnamed_dev_ida, DEFAULT_KSU_MNT_MINOR_DEV,
+					     (1 << MINORBITS) - 1, GFP_ATOMIC);
 			if (dev == -ENOSPC)
 				dev = -EMFILE;
 			if (dev < 0)

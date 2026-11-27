@@ -138,24 +138,20 @@ static int mnt_alloc_group_id(struct mount *mnt)
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	if (susfs_is_current_ksu_domain()) {
-		if (!ida_pre_get(&mnt_group_ida, GFP_KERNEL))
-			return -ENOMEM;
-		res = ida_get_new_above(&mnt_group_ida,
-					DEFAULT_KSU_MNT_GROUP_ID,
-					&mnt->mnt_group_id);
-		goto bypass_orig_flow;
+		res = ida_alloc_min(&mnt_group_ida, DEFAULT_KSU_MNT_GROUP_ID, GFP_KERNEL);
+		if (res < 0)
+			return res;
+		mnt->mnt_group_id = res;
+		return 0;
 	}
 #endif
 
-	if (!ida_pre_get(&mnt_group_ida, GFP_KERNEL))
-		return -ENOMEM;
-	res = ida_get_new_above(&mnt_group_ida,
-				mnt_group_start,
-				&mnt->mnt_group_id);
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-bypass_orig_flow:
-#endif
-	return res;
+	/* 普通进程原生逻辑 */
+	res = ida_alloc_min(&mnt_group_ida, 1, GFP_KERNEL);
+	if (res < 0)
+		return res;
+	mnt->mnt_group_id = res;
+	return 0;
 }
 
 /*
