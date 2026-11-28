@@ -423,7 +423,7 @@ static void sugov_update_single(struct update_util_data *hook, u64 time,
 		 * 针对大核（CPU >= 4）的轻负载快速升频
 		 * 如果 util 超过阈值，直接跳到最大频率的 70%
 		 */
-if (policy->cpu == 7 && util > 60) {
+if (policy->cpu == 7 && util > 50) {
 	unsigned int target = policy->max * 62 / 100;
 	if (next_f < target)
 		next_f = target;
@@ -494,7 +494,7 @@ static unsigned int sugov_next_freq_shared(struct sugov_cpu *sg_cpu, u64 time)
 unsigned int next_f = get_next_freq(sg_policy, util, max);
 
 	/* ========= 新增：中核cluster强制保底高频 ========= */
-	if (policy->cpu == 4 && util > 140) {
+	if (policy->cpu == 4 && util > 120) {
 		unsigned int target = policy->max * 70 / 100;
 		if (next_f < target)
 			next_f = target;
