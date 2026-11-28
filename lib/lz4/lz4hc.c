@@ -594,6 +594,12 @@ select_searchDict_function(const LZ4HC_CCtx_internal *dictCtx)
 	return LZ4MID_searchHCDict;
 }
 
+/* preconditions:
+ * - *srcSizePtr within [1, LZ4_MAX_INPUT_SIZE]
+ * - src is valid
+ * - maxOutputSize >= 1
+ * - dst is valid
+ */
 static int LZ4MID_compress(LZ4HC_CCtx_internal *const ctx,
 			   const char *const src, char *const dst,
 			   int *srcSizePtr, int const maxOutputSize,
@@ -624,23 +630,17 @@ static int LZ4MID_compress(LZ4HC_CCtx_internal *const ctx,
 	unsigned matchLength;
 	unsigned matchDistance;
 
-	/* input sanitization */
 	DEBUGLOG(5, "LZ4MID_compress (%i bytes)", *srcSizePtr);
+	
+	/* preconditions verifications */
 	if (dict == usingDictCtxHc)
 		DEBUGLOG(5, "usingDictCtxHc");
-	assert(*srcSizePtr >= 0);
-	if (*srcSizePtr)
-		assert(src != NULL);
-	if (maxOutputSize)
-		assert(dst != NULL);
-	if (*srcSizePtr < 0)
-		return 0; /* invalid */
-	if (maxOutputSize < 0)
-		return 0; /* invalid */
-	if (*srcSizePtr > LZ4_MAX_INPUT_SIZE) {
-		/* forbidden: no input is allowed to be that large */
-		return 0;
-	}
+	assert(*srcSizePtr > 0);
+    assert(*srcSizePtr <= LZ4_MAX_INPUT_SIZE);
+    assert(src != NULL);
+    assert(maxOutputSize >= 1);
+    assert(dst != NULL);
+    
 	if (limit == fillOutput)
 		oend -= LASTLITERALS; /* Hack for support LZ4 format restriction */
 	if (*srcSizePtr < LZ4_minLength)
@@ -1496,9 +1496,16 @@ LZ4_FORCE_INLINE LZ4HC_match_t LZ4HC_InsertAndFindBestMatch(
 					    favorCompressionRatio);
 }
 
+
+/* preconditions:
+ * - *srcSizePtr within [1, LZ4_MAX_INPUT_SIZE]
+ * - src is valid
+ * - maxOutputSize >= 1
+ * - dst is valid
+ */
 LZ4_FORCE_INLINE int
 LZ4HC_compress_hashChain(LZ4HC_CCtx_internal *const ctx,
-			 const char *const source, char *const dest,
+			 const char* const src,char* const dst,
 			 int *srcSizePtr, int const maxOutputSize,
 			 int maxNbAttempts, const limitedOutput_directive limit,
 			 const dictCtx_directive dict)
@@ -1506,14 +1513,14 @@ LZ4HC_compress_hashChain(LZ4HC_CCtx_internal *const ctx,
 	const int inputSize = *srcSizePtr;
 	const int patternAnalysis = (maxNbAttempts > 128); /* levels 9+ */
 
-	const BYTE *ip = (const BYTE *)source;
+	const BYTE* ip = (const BYTE*)src;
 	const BYTE *anchor = ip;
 	const BYTE *const iend = ip + inputSize;
 	const BYTE *const mflimit = iend - MFLIMIT;
 	const BYTE *const matchlimit = (iend - LASTLITERALS);
 
-	BYTE *optr = (BYTE *)dest;
-	BYTE *op = (BYTE *)dest;
+	BYTE* optr = (BYTE*) dst;
+    BYTE* op = (BYTE*) dst;
 	BYTE *oend = op + maxOutputSize;
 
 	const BYTE *start0;
@@ -1524,6 +1531,13 @@ LZ4HC_compress_hashChain(LZ4HC_CCtx_internal *const ctx,
 
 	/* init */
 	DEBUGLOG(5, "LZ4HC_compress_hashChain (dict?=>%i)", dict);
+	
+	/* preconditions verifications */
+    assert(*srcSizePtr >= 1);
+    assert(src != NULL);
+    assert(maxOutputSize >= 1);
+    assert(dst != NULL);
+    
 	*srcSizePtr = 0;
 	if (limit == fillOutput)
 		oend -= LASTLITERALS; /* Hack for support LZ4 format restriction */
@@ -1737,8 +1751,8 @@ _last_literals:
 	}
 
 	/* End */
-	*srcSizePtr = (int)(((const char *)ip) - source);
-	return (int)(((char *)op) - dest);
+	*srcSizePtr = (int) (((const char*)ip) - src);
+    return (int) (((char*)op)-dst);
 
 _dest_overflow:
 	if (limit == fillOutput) {
@@ -1783,7 +1797,7 @@ static int LZ4HC_compress_optimal(LZ4HC_CCtx_internal *ctx,
 				  const dictCtx_directive dict,
 				  const HCfavor_e favorDecSpeed);
 
-LZ4_FORCE_INLINE int LZ4HC_compress_generic_internal(
+static int LZ4HC_compress_generic_internal(
 	LZ4HC_CCtx_internal *const ctx, const char *const src, char *const dst,
 	int *const srcSizePtr, int const dstCapacity, int cLevel,
 	const limitedOutput_directive limit, const dictCtx_directive dict)
@@ -1791,11 +1805,15 @@ LZ4_FORCE_INLINE int LZ4HC_compress_generic_internal(
 	DEBUGLOG(5, "LZ4HC_compress_generic_internal(src=%p, srcSize=%d)", src,
 		 *srcSizePtr);
 
-	if (limit == fillOutput && dstCapacity < 1)
-		return 0; /* Impossible to store anything */
+/* input sanitization */
 	if ((U32)*srcSizePtr > (U32)LZ4_MAX_INPUT_SIZE)
 		return 0; /* Unsupported input size (too large or negative) */
 
+if (dstCapacity < 1) return 0;   /* Invalid: impossible to store anything */
+    assert(dst); /* since dstCapacity >= 1, dst must be valid */
+    if (*srcSizePtr == 0) { *dst = 0; return 1; }
+    assert(src != NULL); /* since *srcSizePtr >= 1, src must be valid */
+    
 	ctx->end += *srcSizePtr;
 	{
 		cParams_t const cParam = LZ4HC_getCLevelParams(cLevel);
@@ -2307,6 +2325,13 @@ LZ4_FORCE_INLINE LZ4HC_match_t LZ4HC_FindLongerMatch(
 	return md;
 }
 
+
+/* preconditions:
+ * - *srcSizePtr within [1, LZ4_MAX_INPUT_SIZE]
+ * - src is valid
+ * - maxOutputSize >= 1
+ * - dst is valid
+ */
 static int LZ4HC_compress_optimal(LZ4HC_CCtx_internal *ctx,
 				  const char *const source, char *dst,
 				  int *srcSizePtr, int dstCapacity,
@@ -2339,12 +2364,17 @@ static int LZ4HC_compress_optimal(LZ4HC_CCtx_internal *ctx,
 	int ovoff = 0;
 
 	/* init */
+	DEBUGLOG(5, "LZ4HC_compress_optimal(dst=%p, dstCapa=%u)", dst, (unsigned)dstCapacity);
 #if defined(LZ4HC_HEAPMODE) && LZ4HC_HEAPMODE == 1
 	if (opt == NULL)
 		goto _return_label;
 #endif
-	DEBUGLOG(5, "LZ4HC_compress_optimal(dst=%p, dstCapa=%u)", dst,
-		 (unsigned)dstCapacity);
+
+	/* preconditions verifications */
+    assert(dstCapacity > 0);
+    assert(dst != NULL);
+    assert(*srcSizePtr > 0);
+    assert(source != NULL);
 	*srcSizePtr = 0;
 	if (limit == fillOutput)
 		oend -= LASTLITERALS; /* Hack for support LZ4 format restriction */
